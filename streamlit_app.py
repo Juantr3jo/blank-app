@@ -5,7 +5,7 @@ st.set_page_config(
     page_icon="🚀"
 )
 
-st.title("🚀 Mi primera app")
+st.title("🚀 Mi primera MIERERDA")
 st.write("Creada desde una tablet Android, sin instalar nada.")
 
 nombre = st.text_input("¿Cómo te llamas?")
