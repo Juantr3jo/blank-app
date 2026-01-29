@@ -4,7 +4,7 @@ from datetime import datetime
 import pytz
 import os
 
-# ---------------- CONFIG ----------------
+# ---------------- CONFIGURACIÓN ----------------
 ZONA_HORARIA = pytz.timezone("America/Santiago")
 ARCHIVO_DATOS = "diario_trading.csv"
 
@@ -15,18 +15,30 @@ st.set_page_config(
 )
 
 st.title("📓 Diario de Trading")
-st.caption("Registro estructurado para mejorar disciplina, edge y estrategia.")
+st.caption("Sistema estructurado para medir edge real en W y M.")
 
 ahora = datetime.now(ZONA_HORARIA)
 
 # ---------------- MODELOS NORMALIZADOS ----------------
-ESTRATEGIAS = [
-    "WM_EXTREMO"
+PATRONES = ["W", "M"]
+
+SETUPS = [
+    "Ruptura de base",
+    "Segundo impulso",
+    "Tercer impulso"
 ]
 
+EJECUCIONES = ["Agresivo", "Conservador"]
+
+DIRECCIONES = ["Largo", "Corto"]
+
+MERCADOS = ["Futuros", "Forex", "Crypto", "Índices"]
+
+RESULTADOS = ["Win", "Loss", "BE"]
+
 EMOCIONES = [
-    "Confianza",
     "Calma",
+    "Confianza",
     "Neutral",
     "FOMO",
     "Miedo",
@@ -44,20 +56,18 @@ ERRORES = [
     "Sobreoperar"
 ]
 
-RESULTADOS = ["Win", "Loss", "BE"]
-
-DIRECCIONES = ["Largo", "Corto"]
-
-MERCADOS = ["Futuros", "Forex", "Crypto", "Índices"]
-
-# ---------------- CARGA DATOS ----------------
+# ---------------- CARGA DE DATOS ----------------
 columnas = [
     "fecha",
     "hora",
     "mercado",
     "instrumento",
+    "patron",
+    "setup",
+    "ejecucion",
     "direccion",
-    "estrategia",
+    "precio_entrada",
+    "precio_salida",
     "resultado",
     "riesgo_beneficio",
     "emocion_principal",
@@ -71,15 +81,13 @@ else:
     df = pd.DataFrame(columns=columnas)
 
 # ---------------- FORMULARIO ----------------
-st.subheader("📝 Nueva operación")
+st.subheader("📝 Registrar trade")
 
 with st.form("form_trading"):
 
     col1, col2 = st.columns(2)
-
     with col1:
         fecha = st.date_input("Fecha", value=ahora.date())
-
     with col2:
         hora = st.time_input(
             "Hora (Santiago)",
@@ -87,56 +95,64 @@ with st.form("form_trading"):
         )
 
     col3, col4 = st.columns(2)
-
     with col3:
         mercado = st.selectbox("Mercado", MERCADOS)
-
     with col4:
-        instrumento = st.text_input("Instrumento (ej: ES, NQ, EURUSD)")
+        instrumento = st.text_input("Instrumento (ES, NQ, EURUSD…)")
 
     col5, col6 = st.columns(2)
-
     with col5:
-        direccion = st.selectbox("Dirección", DIRECCIONES)
-
+        patron = st.selectbox("Patrón", PATRONES)
     with col6:
-        estrategia = st.selectbox("Estrategia", ESTRATEGIAS)
+        setup = st.selectbox("Setup", SETUPS)
 
     col7, col8 = st.columns(2)
-
     with col7:
-        resultado = st.selectbox("Resultado", RESULTADOS)
-
+        ejecucion = st.selectbox("Tipo de ejecución", EJECUCIONES)
     with col8:
+        direccion = st.selectbox("Dirección", DIRECCIONES)
+
+    col9, col10 = st.columns(2)
+    with col9:
+        precio_entrada = st.number_input("Precio de entrada", format="%.2f")
+    with col10:
+        precio_salida = st.number_input("Precio de salida", format="%.2f")
+
+    col11, col12 = st.columns(2)
+    with col11:
+        resultado = st.selectbox("Resultado", RESULTADOS)
+    with col12:
         riesgo_beneficio = st.selectbox(
             "Riesgo / Beneficio",
             ["1:1", "1:1.5", "1:2", "1:3", "1:4+"]
         )
 
-    col9, col10 = st.columns(2)
-
-    with col9:
+    col13, col14 = st.columns(2)
+    with col13:
         emocion_principal = st.selectbox("Emoción dominante", EMOCIONES)
-
-    with col10:
+    with col14:
         error_principal = st.selectbox("Error principal", ERRORES)
 
     comentarios = st.text_area(
-        "Comentarios (opcional, solo contexto)",
-        placeholder="Ej: entrada válida pero ejecutada tarde"
+        "Comentarios (opcional)",
+        placeholder="Contexto rápido del trade"
     )
 
     guardar = st.form_submit_button("💾 Guardar trade")
 
-# ---------------- GUARDAR ----------------
+# ---------------- GUARDADO ----------------
 if guardar:
     nueva_fila = {
         "fecha": fecha.isoformat(),
         "hora": hora.strftime("%H:%M"),
         "mercado": mercado,
         "instrumento": instrumento,
+        "patron": patron,
+        "setup": setup,
+        "ejecucion": ejecucion,
         "direccion": direccion,
-        "estrategia": estrategia,
+        "precio_entrada": precio_entrada,
+        "precio_salida": precio_salida,
         "resultado": resultado,
         "riesgo_beneficio": riesgo_beneficio,
         "emocion_principal": emocion_principal,
@@ -150,15 +166,15 @@ if guardar:
     st.success("✅ Trade guardado correctamente")
 
 # ---------------- HISTORIAL ----------------
-st.subheader("📊 Historial")
+st.subheader("📊 Historial de trades")
 
 if df.empty:
     st.info("Aún no hay trades registrados.")
 else:
     st.dataframe(df, use_container_width=True)
 
-# ---------------- DESCARGA ----------------
-st.subheader("⬇️ Exportar")
+# ---------------- EXPORTAR ----------------
+st.subheader("⬇️ Exportar datos")
 
 st.download_button(
     "📥 Descargar diario (CSV)",
