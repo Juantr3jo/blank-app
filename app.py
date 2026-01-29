@@ -4,7 +4,7 @@ from datetime import datetime
 import pytz
 import os
 
-# ================= CONFIG =================
+# ================= CONFIGURACIÓN =================
 ZONA_HORARIA = pytz.timezone("America/Santiago")
 ARCHIVO = "diario_trading.csv"
 
@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 st.title("📓 Diario de Trading")
-st.caption("Registro simple y estable para estrategias W y M.")
+st.caption("Registro simple y automático basado en diferencia de precio.")
 
 ahora = datetime.now(ZONA_HORARIA)
 
@@ -24,7 +24,6 @@ PATRONES = ["W", "M"]
 SETUPS = ["Ruptura de base", "Segundo impulso", "Tercer impulso"]
 EJECUCIONES = ["Agresivo", "Conservador"]
 DIRECCIONES = ["Largo", "Corto"]
-RESULTADOS = ["Win", "Loss", "BE"]
 
 # ================= COLUMNAS =================
 COLUMNAS = [
@@ -34,9 +33,10 @@ COLUMNAS = [
     "setup",
     "ejecucion",
     "direccion",
-    "entrada",
-    "salida",
-    "resultado",
+    "precio_entrada",
+    "precio_salida",
+    "resultado_trade",
+    "cantidad_resultado",
     "comentario"
 ]
 
@@ -66,15 +66,35 @@ with st.form("nuevo_trade"):
     ejecucion = st.selectbox("Ejecución", EJECUCIONES)
     direccion = st.selectbox("Dirección", DIRECCIONES)
 
-    entrada = st.number_input("Precio de entrada", format="%.2f")
-    salida = st.number_input("Precio de salida", format="%.2f")
+    precio_entrada = st.number_input("Precio de entrada", format="%.2f")
+    precio_salida = st.number_input("Precio de salida", format="%.2f")
 
-    resultado = st.selectbox("Resultado", RESULTADOS)
     comentario = st.text_area("Comentario (opcional)")
 
     guardar = st.form_submit_button("💾 Guardar trade")
 
+# ================= LÓGICA DE CÁLCULO =================
+def calcular_resultado(entrada, salida, direccion):
+    if direccion == "Largo":
+        diferencia = salida - entrada
+    else:
+        diferencia = entrada - salida
+
+    if diferencia > 0:
+        return "Ganador", round(diferencia, 2)
+    elif diferencia < 0:
+        return "Perdedor", round(diferencia, 2)
+    else:
+        return "BE", 0.0
+
+# ================= GUARDADO =================
 if guardar:
+    resultado_trade, cantidad_resultado = calcular_resultado(
+        precio_entrada,
+        precio_salida,
+        direccion
+    )
+
     nueva_fila = {
         "fecha": fecha.isoformat(),
         "hora": hora.strftime("%H:%M"),
@@ -82,15 +102,19 @@ if guardar:
         "setup": setup,
         "ejecucion": ejecucion,
         "direccion": direccion,
-        "entrada": entrada,
-        "salida": salida,
-        "resultado": resultado,
+        "precio_entrada": precio_entrada,
+        "precio_salida": precio_salida,
+        "resultado_trade": resultado_trade,
+        "cantidad_resultado": cantidad_resultado,
         "comentario": comentario
     }
 
     df = pd.concat([df, pd.DataFrame([nueva_fila])], ignore_index=True)
     df.to_csv(ARCHIVO, index=False)
-    st.success("✅ Trade guardado")
+
+    st.success(
+        f"✅ Trade {resultado_trade} | Resultado: {cantidad_resultado}"
+    )
 
 # ================= HISTORIAL =================
 st.subheader("📊 Historial")
@@ -100,14 +124,14 @@ if df.empty:
 else:
     st.dataframe(df, use_container_width=True)
 
-# ================= ELIMINAR =================
-st.subheader("🗑️ Eliminar trade")
+# ================= ELIMINAR TRADE =================
+st.subheader("🗑️ Eliminar trade (corrección de errores)")
 
 if not df.empty:
     df_reset = df.reset_index(drop=True)
 
     opciones = [
-        f"{i} | {row['fecha']} | {row['patron']} | {row['setup']}"
+        f"{i} | {row['fecha']} | {row['patron']} | {row['setup']} | {row['resultado_trade']} ({row['cantidad_resultado']})"
         for i, row in df_reset.iterrows()
     ]
 
@@ -117,14 +141,16 @@ if not df.empty:
         format_func=lambda x: opciones[x]
     )
 
-    if st.button("❌ Eliminar trade"):
+    confirmar = st.checkbox("Confirmo que deseo eliminar este trade")
+
+    if st.button("❌ Eliminar trade") and confirmar:
         df = df.drop(df.index[idx])
         df.to_csv(ARCHIVO, index=False)
-        st.success("🗑️ Trade eliminado")
+        st.success("🗑️ Trade eliminado correctamente")
         st.experimental_rerun()
 
-# ================= DESCARGA =================
-st.subheader("⬇️ Exportar")
+# ================= EXPORTAR =================
+st.subheader("⬇️ Exportar datos")
 
 st.download_button(
     "Descargar CSV",
