@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 st.title("📓 Diario de Trading")
-st.caption("Registro simple y automático basado en diferencia de precio.")
+st.caption("Registro estructurado de trades + control emocional.")
 
 ahora = datetime.now(ZONA_HORARIA)
 
@@ -24,6 +24,18 @@ PATRONES = ["W", "M"]
 SETUPS = ["Ruptura de base", "Segundo impulso", "Tercer impulso"]
 EJECUCIONES = ["Agresivo", "Conservador"]
 DIRECCIONES = ["Largo", "Corto"]
+
+EMOCIONES = [
+    "Calma",
+    "Confianza",
+    "Neutral",
+    "FOMO",
+    "Miedo",
+    "Ansiedad",
+    "Impaciencia"
+]
+
+INFLUYO = ["Sí", "No"]
 
 # ================= COLUMNAS =================
 COLUMNAS = [
@@ -37,6 +49,9 @@ COLUMNAS = [
     "precio_salida",
     "resultado_trade",
     "cantidad_resultado",
+    "emocion_principal",
+    "intensidad_emocional",
+    "emocion_influyo",
     "comentario"
 ]
 
@@ -68,6 +83,17 @@ with st.form("nuevo_trade"):
 
     precio_entrada = st.number_input("Precio de entrada", format="%.2f")
     precio_salida = st.number_input("Precio de salida", format="%.2f")
+
+    st.markdown("### 🧠 Estado emocional")
+
+    emocion_principal = st.selectbox("Emoción principal", EMOCIONES)
+    intensidad_emocional = st.slider(
+        "Intensidad emocional",
+        min_value=1,
+        max_value=5,
+        value=3
+    )
+    emocion_influyo = st.selectbox("¿La emoción influyó en el trade?", INFLUYO)
 
     comentario = st.text_area("Comentario (opcional)")
 
@@ -106,6 +132,9 @@ if guardar:
         "precio_salida": precio_salida,
         "resultado_trade": resultado_trade,
         "cantidad_resultado": cantidad_resultado,
+        "emocion_principal": emocion_principal,
+        "intensidad_emocional": intensidad_emocional,
+        "emocion_influyo": emocion_influyo,
         "comentario": comentario
     }
 
@@ -125,7 +154,7 @@ else:
     st.dataframe(df, use_container_width=True)
 
 # ================= ELIMINAR TRADE =================
-st.subheader("🗑️ Eliminar trade (corrección de errores)")
+st.subheader("🗑️ Eliminar trade (solo correcciones)")
 
 if not df.empty:
     df_reset = df.reset_index(drop=True)
@@ -146,7 +175,7 @@ if not df.empty:
     if st.button("❌ Eliminar trade") and confirmar:
         df = df.drop(df.index[idx])
         df.to_csv(ARCHIVO, index=False)
-        st.success("🗑️ Trade eliminado correctamente")
+        st.success("🗑️ Trade eliminado")
         st.experimental_rerun()
 
 # ================= EXPORTAR =================
