@@ -186,27 +186,27 @@ st.subheader("🗑️ Eliminar trade (corrección de errores)")
 
 if not df.empty:
 
-    df_reset = df.reset_index()
+    df_reset = df.reset_index(drop=True)
 
-    trade_seleccionado = st.selectbox(
+    opciones = [
+        f"#{i} | {row.get('fecha','')} | {row.get('instrumento','')}"
+        for i, row in df_reset.iterrows()
+    ]
+
+    trade_idx = st.selectbox(
         "Selecciona el trade a eliminar",
-        df_reset["index"],
-        format_func=lambda x: (
-            f"#{x} | "
-            f"{df_reset.loc[df_reset['index'] == x, 'fecha'].values[0]} | "
-            f"{df_reset.loc[df_reset['index'] == x, 'instrumento'].values[0]} | "
-            f"{df_reset.loc[df_reset['index'] == x, 'patron'].values[0]} | "
-            f"{df_reset.loc[df_reset['index'] == x, 'setup'].values[0]}"
-        )
+        options=list(range(len(opciones))),
+        format_func=lambda x: opciones[x]
     )
 
     confirmar = st.checkbox("Confirmar eliminación (acción irreversible)")
 
     if st.button("❌ Eliminar trade seleccionado") and confirmar:
-        df = df.drop(index=trade_seleccionado)
+        df = df.drop(df.index[trade_idx])
         df.to_csv(ARCHIVO_DATOS, index=False)
         st.success("✅ Trade eliminado correctamente")
         st.experimental_rerun()
+
 else:
     st.info("No hay trades para eliminar.")
 
