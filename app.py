@@ -1,10 +1,10 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, date, time
-import os
+from datetime import datetime
 import pytz
+import os
 
-# ---------------- CONFIGURACIÓN GENERAL ----------------
+# ---------------- CONFIG ----------------
 ZONA_HORARIA = pytz.timezone("America/Santiago")
 ARCHIVO_DATOS = "diario_trading.csv"
 
@@ -15,27 +15,53 @@ st.set_page_config(
 )
 
 st.title("📓 Diario de Trading")
-st.caption("Sistema personal para mejorar decisiones, disciplina y estrategia.")
+st.caption("Registro estructurado para mejorar disciplina, edge y estrategia.")
 
-# ---------------- FECHA Y HORA (SANTIAGO) ----------------
-ahora_santiago = datetime.now(ZONA_HORARIA)
+ahora = datetime.now(ZONA_HORARIA)
 
-# ---------------- CARGA / INICIALIZACIÓN DE DATOS ----------------
+# ---------------- MODELOS NORMALIZADOS ----------------
+ESTRATEGIAS = [
+    "WM_EXTREMO"
+]
+
+EMOCIONES = [
+    "Confianza",
+    "Calma",
+    "Neutral",
+    "FOMO",
+    "Miedo",
+    "Ansiedad",
+    "Impaciencia"
+]
+
+ERRORES = [
+    "Sin error",
+    "Entrada anticipada",
+    "Entrada tardía",
+    "Stop mal colocado",
+    "Mover stop",
+    "No respetar plan",
+    "Sobreoperar"
+]
+
+RESULTADOS = ["Win", "Loss", "BE"]
+
+DIRECCIONES = ["Largo", "Corto"]
+
+MERCADOS = ["Futuros", "Forex", "Crypto", "Índices"]
+
+# ---------------- CARGA DATOS ----------------
 columnas = [
     "fecha",
     "hora",
     "mercado",
     "instrumento",
     "direccion",
-    "tipo_orden",
-    "riesgo_beneficio",
-    "resultado",
-    "comision",
     "estrategia",
-    "motivo_entrada",
-    "emociones_positivas",
-    "emociones_negativas",
-    "errores",
+    "resultado",
+    "riesgo_beneficio",
+    "emocion_principal",
+    "error_principal",
     "comentarios"
 ]
 
@@ -45,89 +71,98 @@ else:
     df = pd.DataFrame(columns=columnas)
 
 # ---------------- FORMULARIO ----------------
-st.subheader("📝 Registrar nueva operación")
+st.subheader("📝 Nueva operación")
 
-with st.form("form_diario"):
+with st.form("form_trading"):
 
     col1, col2 = st.columns(2)
 
     with col1:
-        fecha = st.date_input(
-            "📅 Fecha",
-            value=ahora_santiago.date()
-        )
+        fecha = st.date_input("Fecha", value=ahora.date())
 
     with col2:
         hora = st.time_input(
-            "⏰ Hora (Santiago)",
-            value=ahora_santiago.time().replace(second=0, microsecond=0)
+            "Hora (Santiago)",
+            value=ahora.time().replace(second=0, microsecond=0)
         )
-
-    mercado = st.text_input("Mercado (Forex, Futuros, Crypto)")
-    instrumento = st.text_input("Instrumento (EURUSD, SP500, BTC, etc)")
 
     col3, col4 = st.columns(2)
 
     with col3:
-        direccion = st.selectbox("Dirección", ["Largo", "Corto"])
+        mercado = st.selectbox("Mercado", MERCADOS)
 
     with col4:
-        tipo_orden = st.text_input("Tipo de orden (Market, Limit, etc)")
+        instrumento = st.text_input("Instrumento (ej: ES, NQ, EURUSD)")
 
-    riesgo_beneficio = st.text_input("Riesgo / Beneficio (ej: 1:2)")
-    resultado = st.text_input("Resultado (pips, ticks o $)")
-    comision = st.text_input("Comisión / Spread")
+    col5, col6 = st.columns(2)
 
-    estrategia = st.text_input("Estrategia utilizada")
-    motivo_entrada = st.text_area("Motivo de la entrada")
+    with col5:
+        direccion = st.selectbox("Dirección", DIRECCIONES)
 
-    emociones_positivas = st.text_input("Emociones positivas")
-    emociones_negativas = st.text_input("Emociones negativas")
+    with col6:
+        estrategia = st.selectbox("Estrategia", ESTRATEGIAS)
 
-    errores = st.text_area("Errores detectados")
-    comentarios = st.text_area("Comentarios adicionales")
+    col7, col8 = st.columns(2)
 
-    guardar = st.form_submit_button("💾 Guardar operación")
+    with col7:
+        resultado = st.selectbox("Resultado", RESULTADOS)
 
-# ---------------- GUARDADO ----------------
+    with col8:
+        riesgo_beneficio = st.selectbox(
+            "Riesgo / Beneficio",
+            ["1:1", "1:1.5", "1:2", "1:3", "1:4+"]
+        )
+
+    col9, col10 = st.columns(2)
+
+    with col9:
+        emocion_principal = st.selectbox("Emoción dominante", EMOCIONES)
+
+    with col10:
+        error_principal = st.selectbox("Error principal", ERRORES)
+
+    comentarios = st.text_area(
+        "Comentarios (opcional, solo contexto)",
+        placeholder="Ej: entrada válida pero ejecutada tarde"
+    )
+
+    guardar = st.form_submit_button("💾 Guardar trade")
+
+# ---------------- GUARDAR ----------------
 if guardar:
-    nueva_operacion = {
+    nueva_fila = {
         "fecha": fecha.isoformat(),
         "hora": hora.strftime("%H:%M"),
-        "mercado": mercado.strip(),
-        "instrumento": instrumento.strip(),
+        "mercado": mercado,
+        "instrumento": instrumento,
         "direccion": direccion,
-        "tipo_orden": tipo_orden.strip(),
-        "riesgo_beneficio": riesgo_beneficio.strip(),
-        "resultado": resultado.strip(),
-        "comision": comision.strip(),
-        "estrategia": estrategia.strip(),
-        "motivo_entrada": motivo_entrada.strip(),
-        "emociones_positivas": emociones_positivas.strip(),
-        "emociones_negativas": emociones_negativas.strip(),
-        "errores": errores.strip(),
-        "comentarios": comentarios.strip()
+        "estrategia": estrategia,
+        "resultado": resultado,
+        "riesgo_beneficio": riesgo_beneficio,
+        "emocion_principal": emocion_principal,
+        "error_principal": error_principal,
+        "comentarios": comentarios
     }
 
-    df = pd.concat([df, pd.DataFrame([nueva_operacion])], ignore_index=True)
+    df = pd.concat([df, pd.DataFrame([nueva_fila])], ignore_index=True)
     df.to_csv(ARCHIVO_DATOS, index=False)
 
-    st.success("✅ Operación guardada correctamente")
+    st.success("✅ Trade guardado correctamente")
 
 # ---------------- HISTORIAL ----------------
-st.subheader("📊 Historial de operaciones")
+st.subheader("📊 Historial")
 
 if df.empty:
-    st.info("Aún no hay operaciones registradas.")
+    st.info("Aún no hay trades registrados.")
 else:
     st.dataframe(df, use_container_width=True)
 
 # ---------------- DESCARGA ----------------
-st.subheader("⬇️ Exportar diario")
+st.subheader("⬇️ Exportar")
 
 st.download_button(
-    label="📥 Descargar diario en CSV",
-    data=df.to_csv(index=False),
+    "📥 Descargar diario (CSV)",
+    df.to_csv(index=False),
     file_name="diario_trading.csv",
     mime="text/csv"
 )
