@@ -31,4 +31,5 @@ SETUPS = [
 EJECUCIONES = ["Agresivo", "Conservador"]
 DIRECCIONES = ["Largo", "Corto"]
 MERCADOS = ["Futuros", "Forex", "Crypto", "Índices"]
-RESULTADOS = ["Win", "Loss"]()
+RESULTADOS = ["Win", "Loss", "BE"]
+
